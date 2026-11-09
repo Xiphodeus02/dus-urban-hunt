@@ -46,7 +46,6 @@ small{opacity:.7}
 
 <script>
 // ===== Konfiguration =====
-const UNLOCK_CODE="DUS2026";            // Notfall-Code der Spielleitung (z. B. bei GPS-Ausfall)
 const TIME_LIMIT_MIN=180;
 // lat/lng per OpenStreetMap/Nominatim ermittelt – bitte vor dem Einsatz vor Ort prüfen. radius in Metern.
 const STATIONS=[
@@ -200,7 +199,10 @@ function renderStation(app){
   <a class="btn alt" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${st.lat},${st.lng}&travelmode=walking">📍 Route in Google Maps</a></div>${body}
   <button class="btn alt" id="skip">Station überspringen (0 Punkte)</button>`;
   if(!open){updateRadar();startGps();
-    $("#codeBtn").onclick=()=>{if($("#code").value.trim().toUpperCase()===UNLOCK_CODE)unlock(st,false);else $("#codeMsg").textContent="Falscher Code."}}
+    $("#codeBtn").onclick=async()=>{
+      try{const r=await fetch("/api/unlock",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:$("#code").value})});
+        if(r.ok)unlock(st,false);else $("#codeMsg").textContent="Falscher Code."}
+      catch(e){$("#codeMsg").textContent="Keine Verbindung zum Server."}}}
   else st.tasks.forEach((t,i)=>bind(st,t,i));
   if($("#next"))$("#next").onclick=()=>advance(st);
   $("#skip").onclick=()=>{if(confirm("Wirklich überspringen? Dafür gibt es keine weiteren Punkte.")){S.unlocked[st.id]=true;advance(st,true)}};

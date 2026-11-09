@@ -10,7 +10,7 @@ h3{margin:0 0 6px}small{opacity:.7}input{padding:8px;border-radius:8px;border:0}
 <script>
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 async function load(){
-  const r=await fetch("/api/admin?pin="+encodeURIComponent(document.getElementById("pin").value));
+  const r=await fetch("/api/admin",{headers:{"X-Admin-Pin":document.getElementById("pin").value}});
   if(!r.ok)return alert("Falsche PIN");
   const d=(await r.json()).sort((a,b)=>b.points-a.points);
   document.getElementById("o").innerHTML=d.map((t,i)=>`<div class="t"><h3>${i+1}. ${esc(t.team)} – ${t.points} Pkt ${t.finished?"🏁":""}</h3>

@@ -1,8 +1,12 @@
 // Zero-Dependency-Server: statische Dateien + Team-Sync + Rangliste + Spielleiter-Ansicht.
-// Start: node server.js   (optional: PORT=8000 ADMIN_PIN=1234)
+// Start (PowerShell): $env:ADMIN_PIN="..."; $env:UNLOCK_CODE="..."; node server.js   (optional: PORT)
 const http = require("http"), fs = require("fs"), path = require("path");
 const PORT = process.env.PORT || 8000;
-const ADMIN_PIN = process.env.ADMIN_PIN || "1234";
+const ADMIN_PIN = process.env.ADMIN_PIN, UNLOCK_CODE = process.env.UNLOCK_CODE;
+if (!ADMIN_PIN || !UNLOCK_CODE) {
+  console.error("Bitte ADMIN_PIN und UNLOCK_CODE als Umgebungsvariablen setzen.");
+  process.exit(1);
+}
 const ROOT = __dirname, DATA = path.join(ROOT, "data.json"), UP = path.join(ROOT, "uploads");
 if (!fs.existsSync(UP)) fs.mkdirSync(UP);
 let db = { teams: {} };
@@ -53,9 +57,13 @@ http.createServer(async (req, res) => {
       t.photos[d.key] = file; persist();
       return send(res, 200, { ok: true });
     }
+    if (req.method === "POST" && url.pathname === "/api/unlock") {
+      const d = await body(req, 1e4);
+      return send(res, d.code && String(d.code).trim().toUpperCase() === UNLOCK_CODE.toUpperCase() ? 200 : 403, {});
+    }
     if (url.pathname === "/api/leaderboard") return send(res, 200, board());
     if (url.pathname === "/api/admin") {
-      if (url.searchParams.get("pin") !== ADMIN_PIN) return send(res, 403, { error: "pin" });
+      if (req.headers["x-admin-pin"] !== ADMIN_PIN) return send(res, 403, { error: "pin" });
       return send(res, 200, Object.values(db.teams).map(({ id, ...t }) => t));
     }
     // Statische Dateien
@@ -69,4 +77,4 @@ http.createServer(async (req, res) => {
       res.end(data);
     });
   } catch (e) { send(res, 500, { error: String(e.message) }); }
-}).listen(PORT, () => console.log(`Düsseldorf Quest läuft auf http://localhost:${PORT}  (Admin: /admin.html, PIN ${ADMIN_PIN})`));
+}).listen(PORT, () => console.log(`Düsseldorf Quest läuft auf http://localhost:${PORT}  (Admin: /admin.html)`));
